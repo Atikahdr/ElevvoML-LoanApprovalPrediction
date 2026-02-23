@@ -35,7 +35,7 @@ st.set_page_config(
 )
 
 # Page Navigation
-st.sidebar.title("🏦 Loan Approval App")
+st.sidebar.title("🏦 Loan App")
 
 page_map = {
     "🎓 Home Page": "home",
@@ -454,3 +454,4 @@ st.markdown("---")
 
 
 st.caption("💡Decision Tree Regression | Machine Learning Prediction Project")
+
