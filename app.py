@@ -392,6 +392,21 @@ elif st.session_state.page == "history":
     else:
         history_df = pd.DataFrame(st.session_state.history)
 
+        # Summary
+        if "Predicted_Status" in history_df.columns:
+
+            total = len(history_df)
+            approval = (history_df["Predicted_Status"] == "Approval").sum()
+            reject = (history_df["Predicted_Status"] == "Reject").sum()
+          
+            col1, col2, col3 = st.columns(3)
+
+            col1.metric("Total Predictions", total)
+            col2.metric("Approval Performance", approval)
+            col3.metric("Reject / Low", reject)
+
+        st.divider()
+
         # Format confidence
         if "Confidence (%)" in history_df.columns:
             history_df["Confidence (%)"] = history_df["Confidence (%)"].apply(
@@ -412,21 +427,6 @@ elif st.session_state.page == "history":
         st.dataframe(styled_df, use_container_width=True)
         st.divider()
 
-        # Summary
-        if "Predicted_Status" in history_df.columns:
-
-            total = len(history_df)
-            approval = (history_df["Predicted_Status"] == "Approval").sum()
-            reject = (history_df["Predicted_Status"] == "Reject").sum()
-          
-            col1, col2, col3 = st.columns(3)
-
-            col1.metric("Total Predictions", total)
-            col2.metric("Approval Performance", approval)
-            col3.metric("Reject / Low", reject)
-
-        st.divider()
-
         # Download CSV
         csv = history_df.to_csv(index=False).encode("utf-8")
         st.download_button(
@@ -438,6 +438,9 @@ elif st.session_state.page == "history":
 
     if st.button("🗑️ Delete History"):
         st.session_state.history = []
+        if os.path.exists(history_file):
+            os.remove(history_file)
+        
         st.success("History deleted successfully!")
         st.rerun()
 
