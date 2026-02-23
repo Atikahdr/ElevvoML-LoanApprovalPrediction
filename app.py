@@ -313,8 +313,6 @@ elif st.session_state.page == "table":
         data_t.columns = ["Value"]
         st.dataframe(data_t, use_container_width=True)
 
-        st.divider()
-
         # Prediction 
         try:
             prediction, prob = predict_loan(
@@ -386,63 +384,70 @@ elif st.session_state.page == "history":
 
     st.title("🧾 Loan Approval History")
 
-    if len(st.session_state.history) == 0:
-        st.info("No prediction history available.")
-    
+    history_df = pd.DataFrame(st.session_state.history)
+
+    # Summary
+    if not history_df.empty and "Predicted_Status" in history_df.columns:
+        total = len(history_df)
+        approval = (history_df["Predicted_Status"] == "Approval").sum()
+        reject = (history_df["Predicted_Status"] == "Reject").sum()
     else:
-        history_df = pd.DataFrame(st.session_state.history)
+        total = 0
+        approval = 0
+        reject = 0
 
-        # Summary
-        if "Predicted_Status" in history_df.columns:
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Total Predictions", total)
+    col2.metric("Approval", approval)
+    col3.metric("Reject", reject)
 
-            total = len(history_df)
-            approval = (history_df["Predicted_Status"] == "Approval").sum()
-            reject = (history_df["Predicted_Status"] == "Reject").sum()
-          
-            col1, col2, col3 = st.columns(3)
+    st.divider()
 
-            col1.metric("Total Predictions", total)
-            col2.metric("Approval Performance", approval)
-            col3.metric("Reject / Low", reject)
+    # Table
+    if history_df.empty:
+        st.info("No prediction history available.")
 
-        st.divider()
-
+    else:
         # Format confidence
         if "Confidence (%)" in history_df.columns:
             history_df["Confidence (%)"] = history_df["Confidence (%)"].apply(
                 lambda x: f"{x:.2f}%" if pd.notnull(x) else "-"
             )
-        
-        # Function for conditional formatting
+
+        # Conditional formatting
         def highlight_reject(row):
             if row["Predicted_Status"] == "Reject":
-                return ["background-color: #B22222"] * len(row)  
+                return ["background-color: #B22222"] * len(row)
             elif row["Predicted_Status"] == "Approval":
-                return ["background-color: #228B22"] * len(row)  
+                return ["background-color: #228B22"] * len(row)
             else:
                 return [""] * len(row)
 
         styled_df = history_df.iloc[::-1].style.apply(highlight_reject, axis=1)
 
         st.dataframe(styled_df, use_container_width=True)
+
         st.divider()
 
-        # Download CSV
-        csv = history_df.to_csv(index=False).encode("utf-8")
-        st.download_button(
-            "📥 Download History",
-            csv,
-            "loan_approval_history.csv",
-            "text/csv"
-        )
+        # Download & Delete 
+        col_download, col_delete = st.columns(2)
 
-    if st.button("🗑️ Delete History"):
-        st.session_state.history = []
-        if os.path.exists(history_file):
-            os.remove(history_file)
-        
-        st.success("History deleted successfully!")
-        st.rerun()
+        with col_download:
+            csv = history_df.to_csv(index=False).encode("utf-8")
+            st.download_button(
+                "Download History",
+                csv,
+                "loan_approval_history.csv",
+                "text/csv",
+                use_container_width=True
+            )
+
+        with col_delete:
+            if st.button("Delete History", use_container_width=True):
+                st.session_state.history = []
+                if os.path.exists(history_file):
+                    os.remove(history_file)
+                st.rerun()
 
 #  Footer
 st.markdown("---")
